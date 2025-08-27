@@ -13,8 +13,8 @@ import {
   ComposedChart,
   Bar
 } from 'recharts'
-import { formatCurrency, formatDateTime } from '@/utils'
-import dataSourceService from '@/services/dataSourceService'
+import { formatCurrency, formatDateTime } from '../utils'
+import dataSourceService from '../services/dataSourceService'
 
 interface ChartDataPoint {
   timestamp: string
@@ -98,7 +98,7 @@ export default function InteractiveChart({
         }))
         
         // 使用真实预测数据 (从 predictions_raw 获取)
-        const predictionPoints: ChartDataPoint[] = chartData.predictionData.map(pred => ({
+        const predictionPoints: ChartDataPoint[] = chartData.predictionData.map((pred: any) => ({
           timestamp: pred.timestamp,
           meanPrediction: pred.meanPrediction,
           predictionUpper: pred.predictionUpper,
@@ -327,9 +327,9 @@ export default function InteractiveChart({
   }
 
   // 获取X轴的domain
-  const getXAxisDomain = () => {
+  const getXAxisDomain = (): [string, string] => {
     if (zoomDomain && zoomDomain.left && zoomDomain.right) {
-      return [zoomDomain.left, zoomDomain.right]
+      return [String(zoomDomain.left), String(zoomDomain.right)]
     }
     return ['dataMin', 'dataMax']
   }

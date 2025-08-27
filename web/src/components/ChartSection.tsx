@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { BarChart3, Download, ZoomIn, ToggleLeft, ToggleRight } from 'lucide-react'
-import { cn } from '@/utils'
+import { cn } from '../utils'
 import InteractiveChart from './InteractiveChart'
 
 interface ChartSectionProps {

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { Inter, Roboto_Slab } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const robotoSlab = Roboto_Slab({ subsets: ['latin'], variable: '--font-roboto-slab' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const robotoSlab = Roboto_Slab({ subsets: ['latin'], variable: '--font-roboto-slab', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Kronos Live Forecast | BTC/USDT',

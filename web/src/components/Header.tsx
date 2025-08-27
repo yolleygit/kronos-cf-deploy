@@ -1,6 +1,6 @@
 import React from 'react'
 import { Clock, Activity, DollarSign, RefreshCw } from 'lucide-react'
-import { cn, formatCurrency } from '@/utils'
+import { cn, formatCurrency } from '../utils'
 
 interface HeaderProps {
   lastUpdated: string
