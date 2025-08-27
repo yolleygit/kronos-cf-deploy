@@ -1,4 +1,12 @@
 .next/cache/**
+# 兼容 Pages 校验路径（可能去掉了 .next 前缀）
+cache/**
+.cache/**
+**/cache/**
+
+# 避免误传大型打包产物/映射
+**/*.pack
+**/*.map
 # 可选：若还有超大产物，可继续排除其它临时或无用目录
 # .next/static/chunks/webpack-*.js.map
 
