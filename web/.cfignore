@@ -1,0 +1,4 @@
+.next/cache/**
+# 可选：若还有超大产物，可继续排除其它临时或无用目录
+# .next/static/chunks/webpack-*.js.map
+
