@@ -1,0 +1,179 @@
+name: Publish forecasts to R2
+
+on:
+  schedule:
+    - cron: "5 * * * *"   # 每小时05分运行
+  workflow_dispatch:      # 允许手动触发
+  push:
+    branches: [ main ]
+    paths:
+      - 'configs/**'
+      - 'core/**'
+      - 'model/**'
+      - '.github/workflows/publish-to-r2.yml'
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_PUBLIC_BASE: ${{ secrets.R2_PUBLIC_BASE }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r configs/requirements.txt
+          pip install boto3
+
+      - name: Create necessary directories
+        run: |
+          mkdir -p data
+          mkdir -p records
+          mkdir -p predictions_raw/latest
+          mkdir -p web/public/data
+          mkdir -p web/public
+
+      - name: Run BTC forecast (ccxt)
+        run: |
+          echo "🚀 开始运行 BTC 预测 (ccxt)..."
+          KRONOS_CONFIG=configs/config.btc.yaml python run_single.py --config configs/config.btc.yaml
+          echo "✅ BTC 预测完成"
+
+      - name: Run ETH forecast (ccxt)
+        run: |
+          echo "🚀 开始运行 ETH 预测 (ccxt)..."
+          KRONOS_CONFIG=configs/config.eth.yaml python run_single.py --config configs/config.eth.yaml
+          echo "✅ ETH 预测完成"
+
+      - name: Prepare upload files
+        run: |
+          echo "📦 准备上传文件..."
+          
+          # 创建上传目录结构
+          mkdir -p upload/predictions_raw
+          mkdir -p upload/records
+          mkdir -p upload/public/data
+          mkdir -p upload/public
+          
+          # 复制预测数据
+          if [ -d "predictions_raw/latest" ]; then
+            cp -r predictions_raw/latest/* upload/predictions_raw/
+            echo "✅ 复制预测数据完成"
+          else
+            echo "⚠️ predictions_raw/latest 目录不存在"
+          fi
+          
+          # 复制记录文件
+          if [ -f "records/latest_btc.json" ]; then
+            cp records/latest_btc.json upload/records/
+            echo "✅ 复制 BTC 记录文件完成"
+          else
+            echo "⚠️ records/latest_btc.json 不存在"
+          fi
+          
+          if [ -f "records/latest_eth.json" ]; then
+            cp records/latest_eth.json upload/records/
+            echo "✅ 复制 ETH 记录文件完成"
+          else
+            echo "⚠️ records/latest_eth.json 不存在"
+          fi
+          
+          # 复制前端数据文件
+          if [ -f "web/public/data/dashboard.json" ]; then
+            cp web/public/data/dashboard.json upload/public/data/
+            echo "✅ 复制 dashboard.json 完成"
+          else
+            echo "⚠️ web/public/data/dashboard.json 不存在"
+          fi
+          
+          if [ -f "web/public/data/eth_dashboard.json" ]; then
+            cp web/public/data/eth_dashboard.json upload/public/data/
+            echo "✅ 复制 eth_dashboard.json 完成"
+          else
+            echo "⚠️ web/public/data/eth_dashboard.json 不存在"
+          fi
+          
+          # 复制图表文件
+          if [ -f "web/public/prediction_chart.png" ]; then
+            cp web/public/prediction_chart.png upload/public/
+            echo "✅ 复制 BTC 图表完成"
+          else
+            echo "⚠️ web/public/prediction_chart.png 不存在"
+          fi
+          
+          if [ -f "web/public/eth_prediction_chart.png" ]; then
+            cp web/public/eth_prediction_chart.png upload/public/
+            echo "✅ 复制 ETH 图表完成"
+          else
+            echo "⚠️ web/public/eth_prediction_chart.png 不存在"
+          fi
+          
+          # 列出上传文件
+          echo "📋 准备上传的文件列表："
+          find upload -type f -exec echo "  {}" \;
+
+      - name: Configure AWS CLI for R2
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          aws-region: auto
+          # 自定义 S3 端点（R2）
+          audience: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          role-to-assume: ""
+
+      - name: Upload to R2
+        run: |
+          echo "☁️ 开始上传到 Cloudflare R2..."
+          
+          # 设置 R2 端点
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          
+          # 上传所有文件到 R2
+          aws s3 cp upload/ s3://${R2_BUCKET}/ \
+            --endpoint-url ${R2_ENDPOINT} \
+            --recursive \
+            --acl public-read \
+            --cache-control "max-age=3600"
+          
+          echo "✅ 上传完成！"
+          echo "🌐 访问地址: ${R2_PUBLIC_BASE}"
+
+      - name: Verify upload
+        run: |
+          echo "🔍 验证上传结果..."
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          
+          # 列出 R2 中的文件
+          aws s3 ls s3://${R2_BUCKET}/ \
+            --endpoint-url ${R2_ENDPOINT} \
+            --recursive
+
+      - name: Create deployment summary
+        run: |
+          echo "📊 部署摘要" >> $GITHUB_STEP_SUMMARY
+          echo "- 预测时间: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- BTC 预测 (ccxt): ✅ 完成" >> $GITHUB_STEP_SUMMARY
+          echo "- ETH 预测 (ccxt): ✅ 完成" >> $GITHUB_STEP_SUMMARY
+          echo "- R2 上传: ✅ 完成" >> $GITHUB_STEP_SUMMARY
+          echo "- 访问地址: ${R2_PUBLIC_BASE}" >> $GITHUB_STEP_SUMMARY
