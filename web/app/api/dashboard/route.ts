@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (r2Base) {
       const r2Url = `${r2Base.replace(/\/$/, '')}/records/latest_${symbol}.json`
       try {
-        const resp = await fetch(r2Url, { cf: { cacheTtl: 60, cacheEverything: true } as any })
+        const resp = await fetch(r2Url)
         if (resp.ok) {
           const raw = await resp.json()
           data = {
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     if (!data) {
       try {
         const staticUrl = new URL('/data/dashboard.json', url.origin)
-        const resp = await fetch(staticUrl.toString(), { cf: { cacheTtl: 60, cacheEverything: true } as any })
+        const resp = await fetch(staticUrl.toString())
         if (resp.ok) {
           const fallbackJson = await resp.json()
           data = { ...fallbackJson, source: 'static' }
