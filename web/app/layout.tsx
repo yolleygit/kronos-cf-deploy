@@ -1,9 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Roboto_Slab } from 'next/font/google'
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
-const robotoSlab = Roboto_Slab({ subsets: ['latin'], variable: '--font-roboto-slab', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Kronos Live Forecast | BTC/USDT',
@@ -19,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${robotoSlab.variable}`}>
-      <body className={`${inter.className} antialiased min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800`}>
+    <html lang="en">
+      <body className={`antialiased min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800`}>
         {children}
       </body>
     </html>
