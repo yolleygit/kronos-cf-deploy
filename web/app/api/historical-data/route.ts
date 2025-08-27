@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
           console.log('⚠️ R2 历史数据读取失败，状态码:', response.status)
         }
       } catch (r2Error) {
-        console.log('⚠️ R2 历史数据读取异常:', r2Error.message)
+        const msg = r2Error instanceof Error ? r2Error.message : String(r2Error)
+        console.log('⚠️ R2 历史数据读取异常:', msg)
       }
     }
     
@@ -57,7 +58,8 @@ export async function GET(request: NextRequest) {
         }
         console.log('✅ 从本地文件成功读取历史数据')
       } catch (localError) {
-        console.log('⚠️ 本地历史数据读取失败:', localError.message)
+        const msg = localError instanceof Error ? localError.message : String(localError)
+        console.log('⚠️ 本地历史数据读取失败:', msg)
       }
     }
     
