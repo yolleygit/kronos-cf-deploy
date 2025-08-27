@@ -1,7 +1,7 @@
 import React from 'react'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { cn } from '@/utils'
-import { MetricCardProps } from '@/types'
+import { cn } from '../utils'
+import { MetricCardProps } from '../types'
 
 export default function MetricCard({ 
   title, 

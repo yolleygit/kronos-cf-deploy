@@ -1,6 +1,6 @@
 import React from 'react'
-import { cn } from '@/utils'
-import { MetricGroupProps } from '@/types'
+import { cn } from '../utils'
+import { MetricGroupProps } from '../types'
 import MetricCard from './MetricCard'
 
 export default function MetricGroup({ title, description, metrics, className }: MetricGroupProps) {
