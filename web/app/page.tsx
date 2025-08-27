@@ -17,10 +17,10 @@ import {
   Coins
 } from 'lucide-react'
 
-import Header from '@/components/Header'
-import MetricGroup from '@/components/MetricGroup'
-import ChartSection from '@/components/ChartSection'
-import { DashboardData, MetricCardProps } from '@/types'
+import Header from '../src/components/Header'
+import MetricGroup from '../src/components/MetricGroup'
+import ChartSection from '../src/components/ChartSection'
+import { DashboardData, MetricCardProps } from '../src/types'
 import { 
   getMetricColor, 
   getTrendDirection, 
@@ -28,7 +28,7 @@ import {
   getMetricTitle,
   formatPercentage,
   formatNumber
-} from '@/utils'
+} from '../src/utils'
 
 // 定义支持的交易对
 type Symbol = 'BTC' | 'ETH'
