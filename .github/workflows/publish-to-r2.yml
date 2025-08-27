@@ -45,6 +45,20 @@ jobs:
           pip install -r configs/requirements.txt
           pip install boto3
 
+      - name: Download model from public R2 (kronos-prod)
+        run: |
+          echo "📥 Downloading model weights (public from kronos-prod)..."
+          # 公开读取，无需签名
+          export AWS_NO_SIGN_REQUEST=1
+          R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          mkdir -p Kronos_model
+          # 模型统一放在同一桶的前缀 kronos-model/
+          aws s3 cp s3://${R2_BUCKET}/kronos-model/ Kronos_model/ \
+            --endpoint-url "${R2_ENDPOINT}" \
+            --recursive
+          echo "✅ Model ready at ./Kronos_model"
+          ls -R Kronos_model | cat
+
       - name: Create necessary directories
         run: |
           mkdir -p data

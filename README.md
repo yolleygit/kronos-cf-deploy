@@ -37,6 +37,87 @@
    R2_PUBLIC_BASE=https://<your_cloudflare_account_id>.r2.cloudflarestorage.com/kronos-prod
    ```
 
+### 3. 使用统一桶 kronos-prod 存储模型（公开）
+
+由于 Cloudflare Pages 仅托管前端，模型权重不要放进 Git 或 Pages。现在统一使用同一个公开桶 `kronos-prod` 存放模型与前端产物，通过前缀进行隔离：
+
+```
+桶名：kronos-prod
+模型前缀：kronos-model/
+产物前缀：predictions_raw/、records/、public/
+权限：Public（可配自定义域名，或使用 r2.dev 开发域）
+```
+
+2) 本地预上传模型权重到统一桶（公开读）
+
+先从 Hugging Face 下载官方权重（任选其一）：
+
+- Tokenizer: [NeoQuasar/Kronos-Tokenizer-base](https://huggingface.co/NeoQuasar/Kronos-Tokenizer-base)
+- Model: [NeoQuasar/Kronos-base](https://huggingface.co/NeoQuasar/Kronos-base)
+
+示例（使用 huggingface_hub 批量下载）：
+
+```bash
+pip install --upgrade huggingface_hub
+python - << 'PY'
+from huggingface_hub import snapshot_download
+import shutil, os
+
+os.makedirs('../Kronos_model', exist_ok=True)
+
+tk_dir = snapshot_download('NeoQuasar/Kronos-Tokenizer-base')
+md_dir = snapshot_download('NeoQuasar/Kronos-base')
+
+shutil.copytree(tk_dir, '../Kronos_model/Kronos-Tokenizer-base', dirs_exist_ok=True)
+shutil.copytree(md_dir, '../Kronos_model/Kronos-base', dirs_exist_ok=True)
+print('✅ downloaded to ../Kronos_model')
+PY
+```
+
+```bash
+# 配置 R2 凭据（或在 shell profile 中预设）
+export R2_ACCOUNT_ID=你的账户ID
+export R2_ACCESS_KEY_ID=你的Access Key
+export R2_SECRET_ACCESS_KEY=你的Secret Key
+export R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+# 本地模型目录结构（需与代码约定一致）
+# ../Kronos_model/
+# ├── Kronos-Tokenizer-base/{config.json, model.safetensors}
+# └── Kronos-base/{config.json, model.safetensors}
+
+aws s3 cp ../Kronos_model/ s3://kronos-prod/kronos-model/ \
+  --endpoint-url ${R2_ENDPOINT} --recursive --acl public-read
+```
+
+3) 在工作流中添加“下载模型”步骤（位于安装依赖后、运行预测前）
+
+在 `.github/workflows/publish-to-r2.yml` 的“Install Python dependencies”步骤之后，插入：
+
+```yaml
+- name: Download model from public R2 (kronos-prod)
+  run: |
+    echo "📥 Downloading model weights (public from kronos-prod)..."
+    export AWS_NO_SIGN_REQUEST=1
+    R2_ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+    mkdir -p Kronos_model
+    aws s3 cp s3://${R2_BUCKET}/kronos-model/ Kronos_model/ \
+      --endpoint-url "${R2_ENDPOINT}" \
+      --recursive
+    echo "✅ Model ready at ./Kronos_model"
+```
+
+5) 路径对齐说明
+
+代码默认从 `../Kronos_model` 读取。GitHub Actions 的工作目录是仓库根目录，放在 `Kronos_model/` 与相对路径兼容（`core/update_predictions.py` 已按该结构读取）。
+
+6) 目录隔离
+
+- 模型与产物都在同一桶 `kronos-prod`，通过不同前缀隔离：
+  - 模型：`kronos-model/`
+  - 产物：`predictions_raw/`、`records/`、`public/`
+  前端通过 `R2_PUBLIC_BASE` 读取公开产物；模型仅在 CI 下载，不在前端暴露引用路径。
+
 ### 2. GitHub 仓库配置
 
 #### 2.1 创建新仓库
